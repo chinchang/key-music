@@ -83,6 +83,29 @@ mkdir -p "${APP_PATH}/Contents/MacOS" "${APP_PATH}/Contents/Resources"
 cp "$BIN_PATH" "${APP_PATH}/Contents/MacOS/${APP_NAME}"
 chmod 755 "${APP_PATH}/Contents/MacOS/${APP_NAME}"
 
+# ---- generate app icon from logo.png (if present) ----
+LOGO_PNG="logo.png"
+ICON_PLIST_ENTRY=""
+if [ -f "$LOGO_PNG" ]; then
+    log "generating AppIcon.icns from ${LOGO_PNG}"
+    ICONSET="${BUILD_DIR}/${APP_NAME}.iconset"
+    mkdir -p "$ICONSET"
+    sips -z 16   16   "$LOGO_PNG" --out "$ICONSET/icon_16x16.png"       >/dev/null
+    sips -z 32   32   "$LOGO_PNG" --out "$ICONSET/icon_16x16@2x.png"    >/dev/null
+    sips -z 32   32   "$LOGO_PNG" --out "$ICONSET/icon_32x32.png"       >/dev/null
+    sips -z 64   64   "$LOGO_PNG" --out "$ICONSET/icon_32x32@2x.png"    >/dev/null
+    sips -z 128  128  "$LOGO_PNG" --out "$ICONSET/icon_128x128.png"     >/dev/null
+    sips -z 256  256  "$LOGO_PNG" --out "$ICONSET/icon_128x128@2x.png"  >/dev/null
+    sips -z 256  256  "$LOGO_PNG" --out "$ICONSET/icon_256x256.png"     >/dev/null
+    sips -z 512  512  "$LOGO_PNG" --out "$ICONSET/icon_256x256@2x.png"  >/dev/null
+    sips -z 512  512  "$LOGO_PNG" --out "$ICONSET/icon_512x512.png"     >/dev/null
+    sips -z 1024 1024 "$LOGO_PNG" --out "$ICONSET/icon_512x512@2x.png"  >/dev/null
+    iconutil -c icns "$ICONSET" -o "${APP_PATH}/Contents/Resources/AppIcon.icns"
+    ICON_PLIST_ENTRY='    <key>CFBundleIconFile</key>         <string>AppIcon</string>'
+else
+    log "logo.png not found in project root; packaging without an app icon"
+fi
+
 cat > "${APP_PATH}/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -99,6 +122,7 @@ cat > "${APP_PATH}/Contents/Info.plist" <<EOF
     <key>NSHighResolutionCapable</key>     <true/>
     <key>NSPrincipalClass</key>            <string>NSApplication</string>
     <key>LSUIElement</key>                 <false/>
+${ICON_PLIST_ENTRY}
 </dict>
 </plist>
 EOF
