@@ -45,13 +45,20 @@ final class AudioEngine: ObservableObject, @unchecked Sendable {
     private var restartIndex: Int = 0
     private let transposeRotation: [Int] = [0, 5, 7, 3, 10, 2]
 
+    private let settings: SettingsModel
+    private var cancellables: Set<AnyCancellable> = []
+    private var pendingBPM: Double?
+
     struct PendingEvent {
         enum Kind { case bass, arp, lead, accent }
         let kind: Kind
         let midi: Int
     }
 
-    init() {
+    init(settings: SettingsModel) {
+        self.settings = settings
+        self.bpm = settings.bpm
+
         engine.attach(drumPlayer)
         engine.attach(bassPlayer)
         engine.attach(arpPlayer)
@@ -66,6 +73,20 @@ final class AudioEngine: ObservableObject, @unchecked Sendable {
             accentPlayer: accentPlayer
         )
         effects.apply(mood: .neutral)
+        engine.mainMixerNode.outputVolume = Float(settings.masterVolume)
+
+        // Volume applies live; BPM defers to the next bar boundary.
+        settings.$masterVolume
+            .sink { [weak self] v in
+                self?.engine.mainMixerNode.outputVolume = Float(v)
+            }
+            .store(in: &cancellables)
+
+        settings.$bpm
+            .sink { [weak self] newBPM in
+                self?.pendingBPM = newBPM
+            }
+            .store(in: &cancellables)
     }
 
     func start() {
@@ -142,12 +163,24 @@ final class AudioEngine: ObservableObject, @unchecked Sendable {
             if step % 16 == 0 {
                 commitMoodIfChanged()
                 checkRestartAtBarBoundary()
+                applyPendingBPMAtBar()
             }
             scheduleStep(step)
         }
         scheduledThroughStep = lastStep
 
         publishMood()
+    }
+
+    private func applyPendingBPMAtBar() {
+        guard let pending = pendingBPM else { return }
+        let nowFrame = currentFrame()
+        clock.bpm = pending
+        // Re-seed the step counter so step N continues to map to frame N * samplesPerStep
+        // under the new tempo without replaying already-advanced audio time.
+        scheduledThroughStep = Int(Double(nowFrame) / clock.samplesPerStep)
+        bpm = pending
+        pendingBPM = nil
     }
 
     private func checkRestartAtBarBoundary() {
