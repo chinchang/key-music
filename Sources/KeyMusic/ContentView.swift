@@ -13,6 +13,12 @@ struct ContentView: View {
                 Text(String(format: "BPM %.0f", engine.bpm))
                 Text(String(format: "Intensity %.2f", engine.mapper.intensity))
                     .monospacedDigit()
+                Text("Mood: \(engine.moodLabel)")
+                    .foregroundStyle(moodColor(engine.moodLabel))
+                Text("v" + String(format: "%+.2f", engine.moodValence) + " a" + String(format: "%+.2f", engine.moodArousal))
+                    .monospacedDigit()
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Text("Layers: \(engine.layers.activeDescription)")
                     .foregroundStyle(.secondary)
                 Text(engine.globalListening ? "● global" : "○ local only")
@@ -36,5 +42,16 @@ struct ContentView: View {
         }
         .padding(.top, 12)
         .onAppear { focused = true }
+    }
+
+    private func moodColor(_ label: String) -> Color {
+        switch label {
+        case "happy":     return .yellow
+        case "romantic":  return .pink
+        case "sad":       return .blue
+        case "depressed": return .gray
+        case "angry":     return .red
+        default:          return .secondary
+        }
     }
 }
