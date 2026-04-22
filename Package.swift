@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "KeyMusic",
+    name: "VibeType",
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
-            name: "KeyMusic",
-            path: "Sources/KeyMusic"
+            name: "VibeType",
+            path: "Sources/VibeType"
         )
     ]
 )

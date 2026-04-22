@@ -8,7 +8,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("KeyMusic").font(.title2).bold()
+                Text("VibeType").font(.title2).bold()
                 Spacer()
                 Text(String(format: "BPM %.0f", engine.bpm))
                 Text(String(format: "Intensity %.2f", engine.mapper.intensity))

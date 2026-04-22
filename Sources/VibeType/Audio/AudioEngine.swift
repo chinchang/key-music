@@ -35,6 +35,7 @@ final class AudioEngine: ObservableObject, @unchecked Sendable {
     private var globalKeyMonitor: Any?
     private var localKeyMonitor: Any?
     @Published var globalListening: Bool = false
+    @Published var isEnabled: Bool = true
 
     private var appliedMood: Mood = .neutral
     private var currentBrightness: Double = 1.0
@@ -121,6 +122,12 @@ final class AudioEngine: ObservableObject, @unchecked Sendable {
     }
 
     private func tick() {
+        guard isEnabled else {
+            // Keep scheduledThroughStep in sync with "now" so we don't try to catch up
+            // with stale steps when re-enabled.
+            scheduledThroughStep = max(scheduledThroughStep, Int(Double(currentFrame()) / clock.samplesPerStep))
+            return
+        }
         let lookaheadSeconds = 0.25
         let now = currentFrame()
         let lookaheadFrames = AVAudioFramePosition(lookaheadSeconds * Synth.sampleRate)
@@ -306,6 +313,7 @@ final class AudioEngine: ObservableObject, @unchecked Sendable {
     }
 
     func handleCharacters(_ characters: String) {
+        guard isEnabled else { return }
         mood.append(characters: characters)
 
         guard let event = mapper.process(characters: characters) else { return }
